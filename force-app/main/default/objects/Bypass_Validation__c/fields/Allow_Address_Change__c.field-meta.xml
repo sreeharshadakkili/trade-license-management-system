@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Allow_Address_Change__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>When TRUE, validation rules allow address field updates. Used by Apex triggers to bypass validation after payment confirmed.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Set to TRUE in Apex code before updating License addresses programmatically. Always set back to FALSE after update completes.</inlineHelpText>
+    <label>Allow Address Change</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

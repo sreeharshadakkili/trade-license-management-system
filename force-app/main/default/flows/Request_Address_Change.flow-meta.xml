@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>64.0</apiVersion>
+    <description>Allows license holders to submit address change requests with payment validation. Payment is stubbed for demo purposes.</description>
+    <interviewLabel>Request Address Change {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Request Address Change</label>
+    <processType>Flow</processType>
+    <runInMode>SystemModeWithoutSharing</runInMode>
+    <status>Active</status>
+
+    <!--
+        NOTE: Salesforce Flow XML requires elements to be in alphabetical order by tag name.
+        Order used here: assignments → dynamicChoiceSets → formulas →
+        recordCreates → recordLookups → recordUpdates → screens → start → variables
+    -->
+
+    <!-- ═══ ASSIGNMENTS ═══ -->
+
+    <assignments>
+        <name>Generate_Transaction_ID</name>
+        <label>Generate Transaction ID</label>
+        <locationX>176</locationX>
+        <locationY>648</locationY>
+        <assignmentItems>
+            <assignToReference>varTransactionId</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>formulaTransactionId</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Create_Address_Change_Request</targetReference>
+        </connector>
+    </assignments>
+
+    <!-- ═══ DYNAMIC CHOICE SETS ═══ -->
+
+    <!-- Reuses the Business_State__c picklist from License__c so state choices stay in sync -->
+    <dynamicChoiceSets>
+        <name>stateChoices</name>
+        <dataType>Picklist</dataType>
+        <displayField>Business_State__c</displayField>
+        <picklistField>Business_State__c</picklistField>
+        <picklistObject>License__c</picklistObject>
+    </dynamicChoiceSets>
+
+    <!-- ═══ FORMULAS ═══ -->
+
+    <!-- Builds a fake transaction ID: STUB_<current timestamp> -->
+    <formulas>
+        <name>formulaTransactionId</name>
+        <dataType>String</dataType>
+        <expression>&quot;STUB_&quot; &amp; TEXT(NOW())</expression>
+    </formulas>
+
+    <!-- ═══ RECORD CREATES ═══ -->
+
+    <!--
+        Creates the Address_Change_Request__c with Payment_Confirmed__c = false.
+        A separate recordUpdates element (below) flips it to true, which fires
+        the Apex trigger from Phase 3.
+    -->
+    <recordCreates>
+        <name>Create_Address_Change_Request</name>
+        <label>Create Address Change Request</label>
+        <locationX>176</locationX>
+        <locationY>768</locationY>
+        <assignRecordIdToReference>varRequestId</assignRecordIdToReference>
+        <connector>
+            <targetReference>Update_Request_Confirm_Payment</targetReference>
+        </connector>
+        <inputAssignments>
+            <field>License__c</field>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Requested_By__c</field>
+            <value>
+                <elementReference>$User.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Old_Street__c</field>
+            <value>
+                <elementReference>varLicense.Business_Street__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Old_City__c</field>
+            <value>
+                <elementReference>varLicense.Business_City__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Old_State__c</field>
+            <value>
+                <elementReference>varLicense.Business_State__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Old_Postal_Code__c</field>
+            <value>
+                <elementReference>varLicense.Business_Postal_Code__c</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>New_Street__c</field>
+            <value>
+                <elementReference>Input_New_Street</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>New_City__c</field>
+            <value>
+                <elementReference>Input_New_City</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>New_State__c</field>
+            <value>
+                <elementReference>Input_New_State</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>New_Postal_Code__c</field>
+            <value>
+                <elementReference>Input_New_Postal_Code</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Status__c</field>
+            <value>
+                <stringValue>Payment Pending</stringValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Payment_Amount__c</field>
+            <value>
+                <numberValue>50</numberValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Payment_Confirmed__c</field>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Request_Date__c</field>
+            <value>
+                <elementReference>$Flow.CurrentDateTime</elementReference>
+            </value>
+        </inputAssignments>
+        <object>Address_Change_Request__c</object>
+    </recordCreates>
+
+    <!-- ═══ RECORD LOOKUPS ═══ -->
+
+    <recordLookups>
+        <name>Get_License_Record</name>
+        <label>Get License Record</label>
+        <locationX>176</locationX>
+        <locationY>168</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Screen_Confirm_Current_Address</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>recordId</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>true</getFirstRecordOnly>
+        <object>License__c</object>
+        <outputReference>varLicense</outputReference>
+        <queriedFields>Id</queriedFields>
+        <queriedFields>Business_Street__c</queriedFields>
+        <queriedFields>Business_City__c</queriedFields>
+        <queriedFields>Business_State__c</queriedFields>
+        <queriedFields>Business_Postal_Code__c</queriedFields>
+        <queriedFields>Business_Country__c</queriedFields>
+    </recordLookups>
+
+    <!-- ═══ RECORD UPDATES ═══ -->
+
+    <!--
+        Flips Payment_Confirmed__c from false → true.
+        THIS IS WHAT FIRES THE APEX TRIGGER (Phase 3).
+        Handler detects the flip and updates the License address automatically.
+    -->
+    <recordUpdates>
+        <name>Update_Request_Confirm_Payment</name>
+        <label>Update Request - Confirm Payment</label>
+        <locationX>176</locationX>
+        <locationY>888</locationY>
+        <connector>
+            <targetReference>Screen_Success</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>varRequestId</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>Payment_Confirmed__c</field>
+            <value>
+                <booleanValue>true</booleanValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Status__c</field>
+            <value>
+                <stringValue>Payment Confirmed</stringValue>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Payment_Transaction_ID__c</field>
+            <value>
+                <elementReference>varTransactionId</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>Payment_Method__c</field>
+            <value>
+                <stringValue>Credit Card</stringValue>
+            </value>
+        </inputAssignments>
+        <object>Address_Change_Request__c</object>
+    </recordUpdates>
+
+    <!-- ═══ SCREENS (all grouped together) ═══ -->
+
+    <!-- Screen 1: Confirm Current Address -->
+    <screens>
+        <name>Screen_Confirm_Current_Address</name>
+        <label>Confirm Current Address</label>
+        <locationX>176</locationX>
+        <locationY>288</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <connector>
+            <targetReference>Screen_Enter_New_Address</targetReference>
+        </connector>
+        <fields>
+            <name>Display_Header</name>
+            <fieldText>&lt;p&gt;&lt;strong&gt;Request Address Change&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;Changing your business address requires a $50 processing fee. A new license card will be mailed to your new address within 5-7 business days.&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <fields>
+            <name>Display_Current_Address</name>
+            <fieldText>&lt;p&gt;&lt;strong&gt;Current Licensed Address:&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;{!varLicense.Business_Street__c}&lt;br/&gt;{!varLicense.Business_City__c}, {!varLicense.Business_State__c} {!varLicense.Business_Postal_Code__c}&lt;br/&gt;{!varLicense.Business_Country__c}&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <nextOrFinishButtonLabel>Continue</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+
+    <!-- Screen 2: Enter New Address -->
+    <screens>
+        <name>Screen_Enter_New_Address</name>
+        <label>Enter New Address</label>
+        <locationX>176</locationX>
+        <locationY>408</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <backButtonLabel>Back</backButtonLabel>
+        <connector>
+            <targetReference>Screen_Payment</targetReference>
+        </connector>
+        <fields>
+            <name>Display_Instructions</name>
+            <fieldText>&lt;p&gt;&lt;strong&gt;Enter Your New Business Address&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;Please enter the complete address where your business will be located. This will be the address printed on your new license card.&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <fields>
+            <name>Input_New_Street</name>
+            <dataType>String</dataType>
+            <fieldText>Street Address</fieldText>
+            <fieldType>InputField</fieldType>
+            <isRequired>true</isRequired>
+        </fields>
+        <fields>
+            <name>Input_New_City</name>
+            <dataType>String</dataType>
+            <fieldText>City</fieldText>
+            <fieldType>InputField</fieldType>
+            <isRequired>true</isRequired>
+        </fields>
+        <fields>
+            <name>Input_New_State</name>
+            <choiceReferences>stateChoices</choiceReferences>
+            <dataType>String</dataType>
+            <fieldText>State</fieldText>
+            <fieldType>DropdownBox</fieldType>
+            <isRequired>true</isRequired>
+        </fields>
+        <fields>
+            <name>Input_New_Postal_Code</name>
+            <dataType>String</dataType>
+            <fieldText>Postal Code</fieldText>
+            <fieldType>InputField</fieldType>
+            <isRequired>true</isRequired>
+        </fields>
+        <nextOrFinishButtonLabel>Continue to Payment</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+
+    <!-- Screen 3: Payment (Stubbed) -->
+    <screens>
+        <name>Screen_Payment</name>
+        <label>Payment</label>
+        <locationX>176</locationX>
+        <locationY>528</locationY>
+        <allowBack>true</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <backButtonLabel>Back</backButtonLabel>
+        <connector>
+            <targetReference>Generate_Transaction_ID</targetReference>
+        </connector>
+        <fields>
+            <name>Display_Payment_Info</name>
+            <fieldText>&lt;p&gt;&lt;strong&gt;Payment Required: $50.00&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;Address change processing fee&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&lt;em&gt;Note: This is a demo. In production, you would see a payment gateway here (Stripe, PayPal, etc.). Clicking &quot;Pay Now&quot; simulates a successful payment.&lt;/em&gt;&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Mock Payment Gateway&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;Card Number: &amp;bull;&amp;bull;&amp;bull;&amp;bull; &amp;bull;&amp;bull;&amp;bull;&amp;bull; &amp;bull;&amp;bull;&amp;bull;&amp;bull; 1234&lt;br/&gt;Expiration: 12/26&lt;br/&gt;CVV: &amp;bull;&amp;bull;&amp;bull;&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <nextOrFinishButtonLabel>Pay Now</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+
+    <!-- Screen 4: Success -->
+    <screens>
+        <name>Screen_Success</name>
+        <label>Success</label>
+        <locationX>176</locationX>
+        <locationY>1008</locationY>
+        <allowBack>false</allowBack>
+        <allowFinish>true</allowFinish>
+        <allowPause>false</allowPause>
+        <fields>
+            <name>Display_Success</name>
+            <fieldText>&lt;p&gt;&lt;strong&gt;Address Change Request Successful!&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;Your payment of $50.00 has been processed.&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Transaction ID:&lt;/strong&gt; {!varTransactionId}&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Next Steps:&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&#x2022; Your license address has been updated immediately&lt;/p&gt;&lt;p&gt;&#x2022; A new license card will be printed and mailed to your new address&lt;/p&gt;&lt;p&gt;&#x2022; Expected delivery: 5-7 business days&lt;/p&gt;&lt;p&gt;&amp;nbsp;&lt;/p&gt;&lt;p&gt;&lt;strong&gt;New Address:&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;{!Input_New_Street}&lt;br/&gt;{!Input_New_City}, {!Input_New_State} {!Input_New_Postal_Code}&lt;/p&gt;</fieldText>
+            <fieldType>DisplayText</fieldType>
+        </fields>
+        <nextOrFinishButtonLabel>Done</nextOrFinishButtonLabel>
+        <showFooter>true</showFooter>
+        <showHeader>true</showHeader>
+    </screens>
+
+    <!-- ═══ START ═══ -->
+
+    <start>
+        <locationX>176</locationX>
+        <locationY>48</locationY>
+        <connector>
+            <targetReference>Get_License_Record</targetReference>
+        </connector>
+    </start>
+
+    <!-- ═══ VARIABLES ═══ -->
+
+    <variables>
+        <name>recordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>varLicense</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>License__c</objectType>
+    </variables>
+    <variables>
+        <name>varRequestId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>varTransactionId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+
+</Flow>

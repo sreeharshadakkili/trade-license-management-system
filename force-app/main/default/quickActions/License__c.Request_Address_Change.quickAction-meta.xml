@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QuickAction xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Launches the Request Address Change flow to submit an address change with payment</description>
+    <flowDefinition>Request_Address_Change</flowDefinition>
+    <label>Request Address Change</label>
+    <optionsCreateFeedItem>false</optionsCreateFeedItem>
+    <type>Flow</type>
+</QuickAction>
