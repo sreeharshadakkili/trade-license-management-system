@@ -55,17 +55,12 @@ Government licensing agencies need to prevent staff from changing a licensed bus
 
 ---
 
-## Deployment
+## Development Approach
 
-```bash
-git clone <repository-url> && cd trade-license-system
-sf org login web --set-default --alias trade-license-dev
-sf project deploy start --target-org trade-license-dev
-sf apex run test --class-names AddressChangeRequestTest --code-coverage --result-format human --synchronous --target-org trade-license-dev
-```
+Built using Salesforce DX with AI-assisted code generation for metadata boilerplate and Salesforce-specific formatting. Architecture design, business logic implementation, and testing strategy reflect manual engineering decisions aligned with Salesforce best practices.
 
-After deploy: Setup → Object Manager → License → Page Layouts → add the **Request Address Change** Quick Action to the actions section.
-
----
-
-*Take-home technical assignment*
+Tools used:
+- VS Code with Salesforce Extensions
+- Salesforce CLI
+- AI pair programming assistant (metadata generation, boilerplate)
+- Git for version control
